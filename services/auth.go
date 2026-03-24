@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
+	"strconv"
 )
 
 var (
@@ -51,6 +52,9 @@ func GenerateTokens(userID primitive.ObjectID, email string) (string, string, er
 	expirySeconds := 3600 // Default 1 hour
 	if expiry := os.Getenv("JWT_EXPIRY"); expiry != "" {
 		// Parse expiry from env if needed
+		if parsed, err := strconv.Atoi(expiry); err == nil {
+			expirySeconds = parsed
+	}
 	}
 
 	accessClaims := Claims{
@@ -112,6 +116,7 @@ func ValidateToken(tokenString string) (*Claims, error) {
 // Register creates a new user account
 func Register(ctx context.Context, req models.RegisterRequest) (*models.User, error) {
 	collection := config.DB.Collection("users")
+	studentCollection := config.DB.Collection("students")
 
 	// Check if user already exists
 	var existingUser models.User
@@ -137,6 +142,16 @@ func Register(ctx context.Context, req models.RegisterRequest) (*models.User, er
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
+	student := models.Student{
+    UserID: user.ID,
+    StudentID: req.StudentID,
+    Name: req.Name,
+    Email: req.Email,
+    Faculty: req.Faculty,
+    CreatedAt: time.Now(),
+    UpdatedAt: time.Now(),
+}
+studentCollection.InsertOne(ctx, student)
 
 	_, err = collection.InsertOne(ctx, user)
 	if err != nil {
