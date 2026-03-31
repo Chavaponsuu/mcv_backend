@@ -1,14 +1,10 @@
 package dto
 
+import (
 
-type CourseItem struct {
-	ID         string `json:"id"`
-	CourseCode string `json:"course_code"`
-	Title      string `json:"title"`
-	Credits    int    `json:"credits"`
-}
-
+	"mcv_backend/domain"
+)
 type CoursesResponse struct {
-	Courses []CourseItem `json:"courses"`
+	Courses []domain.CourseItem `json:"courses"`
 	Total   int          `json:"total"`
 }

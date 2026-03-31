@@ -5,9 +5,10 @@ import (
 	"fmt"
 
 	"mcv_backend/config"
-	"mcv_backend/dto"
 	"mcv_backend/models"
+	"mcv_backend/domain"
 	"time"
+
 	
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,7 +24,7 @@ func NewCourseService(col *mongo.Collection) *CourseService {
 }
 // GetStudentCourses fetches a student's enrolled courses through the relational model:
 // Student → Enrollment → CourseOffering → Course + Semester
-func GetStudentCourses(ctx context.Context, userID primitive.ObjectID, semesterID *primitive.ObjectID) (*dto.StudentCoursesResponse, error) {
+func GetStudentCourses(ctx context.Context, userID primitive.ObjectID, semesterID *primitive.ObjectID) ([]domain.StudentCourseItem, error) {
 	enrollmentsColl := config.DB.Collection("enrollments")
 	
 	// Build query
@@ -60,7 +61,7 @@ func GetStudentCourses(ctx context.Context, userID primitive.ObjectID, semesterI
     {{Key: "$unwind", Value: "$semester"}},
     {{Key: "$project", Value: bson.M{
         "enrollment_id": "$_id",
-        "course_code":   "$course.course_id",
+        "course_code":   "$course.course_code",
         "course_title":  "$course.title",
         "section":       "$offering.section",
         "instructor":    "$offering.instructor",
@@ -76,36 +77,28 @@ func GetStudentCourses(ctx context.Context, userID primitive.ObjectID, semesterI
 	}
 	defer cursor.Close(ctx)
 
-	var courses []dto.StudentCourseItem
+	var courses []domain.StudentCourseItem
 	if err := cursor.All(ctx, &courses); err != nil {
 		return nil, fmt.Errorf("failed to decode courses: %w", err)
 	}
 
-	// Determine which semester to return
-	var responseSemesterID primitive.ObjectID
-	if semesterID != nil {
-		responseSemesterID = *semesterID
-	} else if len(courses) > 0 {
-		// Get semester from first enrollment
-		var enrollment models.Enrollment
-		if err := enrollmentsColl.FindOne(ctx, bson.M{"user_id": userID}).Decode(&enrollment); err == nil {
-			responseSemesterID = enrollment.SemesterID
-		}
-	}
-	var student *models.Student
+if courses == nil {
+	courses = []domain.StudentCourseItem{}
+}
+
+	// // Determine which semester to return
+	// var responseSemesterID primitive.ObjectID
+	// if semesterID != nil {
+	// 	responseSemesterID = *semesterID
+	// } else if len(courses) > 0 {
+	// 	// Get semester from first enrollment
+	// 	var enrollment models.Enrollment
+	// 	if err := enrollmentsColl.FindOne(ctx, bson.M{"user_id": userID}).Decode(&enrollment); err == nil {
+	// 		responseSemesterID = enrollment.SemesterID
+	// 	}
+	// }
 	
-
-	student, err = GetStudentByUserID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch student by user_id: %w", err)
-	}
-
-	return &dto.StudentCoursesResponse{
-		StudentID:  student.StudentID,
-		SemesterID: responseSemesterID,
-		Courses:    courses,
-		Total:      len(courses),
-	}, nil
+	return courses, nil
 }
 
 // GetStudentByUserID retrieves a student record by user ID
@@ -120,7 +113,7 @@ func GetStudentByUserID(ctx context.Context, userID primitive.ObjectID) (*models
 	
 	return &student, nil
 }
-func (s *CourseService) GetAllCourses(ctx context.Context) (*dto.CoursesResponse, error) {
+func (s *CourseService) GetAllCourses(ctx context.Context) ([]domain.CourseItem, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -138,10 +131,10 @@ func (s *CourseService) GetAllCourses(ctx context.Context) (*dto.CoursesResponse
 	}
 
 	// map → DTO
-	items := make([]dto.CourseItem, 0)
+	items := make([]domain.CourseItem, 0)
 
 	for _, c := range courses {
-		items = append(items, dto.CourseItem{
+		items = append(items, domain.CourseItem{
 			ID:         c.ID.Hex(),
 			CourseCode: c.CourseCode,
 			Title:      c.Title,
@@ -149,8 +142,5 @@ func (s *CourseService) GetAllCourses(ctx context.Context) (*dto.CoursesResponse
 		})
 	}
 
-	return &dto.CoursesResponse{
-		Courses: items,
-		Total:   len(items),
-	}, nil
+	return items, nil
 }

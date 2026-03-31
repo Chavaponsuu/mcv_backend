@@ -38,12 +38,13 @@ func main() {
 	router.HandleFunc("/api/auth/register", handlers.RegisterHandler).Methods("POST")
 	router.HandleFunc("/api/auth/login", handlers.LoginHandler).Methods("POST")
 	router.HandleFunc("/api/student/course", courseHandler.GetAllCourses).Methods("GET")
-	
+	router.HandleFunc("/api/student/semester",handlers.GetAllSemesters).Methods("GET")
 	// Protected endpoints
 	protected := router.PathPrefix("/api").Subrouter()
 	protected.Use(middleware.AuthMiddleware)
 	protected.HandleFunc("/student/me", handlers.GetMeHandler).Methods("GET")
-	protected.HandleFunc("/student/me/courses", handlers.GetUserCourses).Methods("GET")
+	protected.HandleFunc("/student/me/courses", courseHandler.GetUserCourses).Methods("GET")
+	protected.HandleFunc("/student/me/semester", handlers.GetSemesterIDByYearAndTerm).Methods("GET")
 	
 	log.Printf("Server starting on port %s", port)
 	if err := http.ListenAndServe(":"+port, router); err != nil {

@@ -3,19 +3,27 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"context"
+    "time"
 
 	"mcv_backend/models"
 	"mcv_backend/services"
+	"mcv_backend/dto"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	
 )
 type CourseHandler struct {
 	Service *services.CourseService
 }
-// GetUserCourses handles GET /api/courses?semester_id=xxx
+
+// GetUserCourses handles GET /api/student/me/courses?semester_id=xxx
 // Fetches courses through the relational model: Student → Enrollment → CourseOffering → Course
-func GetUserCourses(w http.ResponseWriter, r *http.Request) {
+func (h *CourseHandler) GetUserCourses(w http.ResponseWriter, r *http.Request) {
 	// Extract user ID from context (set by auth middleware)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
 	userIDStr, ok := r.Context().Value("user_id").(string)
 	if !ok || userIDStr == "" {
 		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
@@ -28,7 +36,7 @@ func GetUserCourses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get student record for this user
-	student, err := services.GetStudentByUserID(r.Context(), userID)
+	student, err := services.GetStudentByUserID(ctx, userID)
 	if err != nil {
 		respondWithError(w, http.StatusNotFound, "Student profile not found")
 		return
@@ -44,28 +52,43 @@ func GetUserCourses(w http.ResponseWriter, r *http.Request) {
 		}
 		semesterID = &sid
 	}
+	
 
 	// Fetch courses through relational model.
 	// Enrollments are keyed by the student document id.
-	response, err := services.GetStudentCourses(r.Context(), student.ID, semesterID)
+	courses, err := services.GetStudentCourses(ctx, userID, semesterID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to fetch courses: "+err.Error())
 		return
+	}
+
+	response := &dto.StudentCoursesResponse{
+		StudentID:  student.StudentID,
+		SemesterID: *semesterID,
+		Courses:    courses,
+		Total:      len(courses),
 	}
 
 	respondWithJSON(w, http.StatusOK, response)
 }
 
 func (h *CourseHandler) GetAllCourses(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
 
-	result, err := h.Service.GetAllCourses(r.Context())
+	
+	result, err := h.Service.GetAllCourses(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	response := &dto.CoursesResponse{
+		Courses: result,
+		Total: len(result),
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	json.NewEncoder(w).Encode(response)
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
