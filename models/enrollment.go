@@ -17,7 +17,7 @@ const (
 // Enrollment represents a student's enrollment in a course offering
 type Enrollment struct {
 	ID               primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	UserID        primitive.ObjectID `bson:"student_id" json:"student_id"`
+	UserID           primitive.ObjectID `bson:"user_id" json:"user_id"`
 	CourseOfferingID primitive.ObjectID `bson:"course_offering_id" json:"course_offering_id"`
 	
 	// Denormalized for faster queries

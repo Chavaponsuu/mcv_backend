@@ -63,10 +63,12 @@ func (h *CourseHandler) GetUserCourses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := &dto.StudentCoursesResponse{
-		StudentID:  student.StudentID,
-		SemesterID: *semesterID,
-		Courses:    courses,
-		Total:      len(courses),
+		StudentID: student.StudentID,
+		Courses:   courses,
+		Total:     len(courses),
+	}
+	if semesterID != nil {
+		response.SemesterID = *semesterID
 	}
 
 	respondWithJSON(w, http.StatusOK, response)

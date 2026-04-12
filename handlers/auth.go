@@ -6,7 +6,7 @@ import (
 
 	"mcv_backend/models"
 	"mcv_backend/services"
-
+		"go.mongodb.org/mongo-driver/bson/primitive"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -106,10 +106,22 @@ func GetMeHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(ErrorResponse{Error: "Failed to get user"})
 		return
 	}
-
+	objID, err := primitive.ObjectIDFromHex(userID)
+	student, err := services.GetStudentByUserID(r.Context(),objID);
+	if err != nil {
+		if err == services.ErrUserNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(ErrorResponse{Error: "Student not found"})
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Error: "Failed to get student"})
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"id":    user.ID.Hex(),
+		"student_id": student.StudentID,
 		"email": user.Email,
 	})
 }

@@ -43,6 +43,7 @@ func main() {
 	protected := router.PathPrefix("/api").Subrouter()
 	protected.Use(middleware.AuthMiddleware)
 	protected.HandleFunc("/student/me", handlers.GetMeHandler).Methods("GET")
+	// protected.HandleFunc("/student/me/profile", handlers.GetMyStudentProfile).Methods("GET")
 	protected.HandleFunc("/student/me/courses", courseHandler.GetUserCourses).Methods("GET")
 	protected.HandleFunc("/student/me/semester", handlers.GetSemesterIDByYearAndTerm).Methods("GET")
 	

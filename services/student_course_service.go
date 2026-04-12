@@ -7,7 +7,7 @@ import (
 	"mcv_backend/config"
 	"mcv_backend/models"
 	"mcv_backend/domain"
-	"time"
+
 
 	
 	"go.mongodb.org/mongo-driver/bson"
@@ -61,12 +61,13 @@ func GetStudentCourses(ctx context.Context, userID primitive.ObjectID, semesterI
     {{Key: "$unwind", Value: "$semester"}},
     {{Key: "$project", Value: bson.M{
         "enrollment_id": "$_id",
-        "course_code":   "$course.course_code",
+        "course_id":   "$course.course_id",
         "course_title":  "$course.title",
         "section":       "$offering.section",
         "instructor":    "$offering.instructor",
         "status":        "$status",
         "grade":         "$grade",
+		"image_url": "$course.image_url",
         "enrolled_at":   "$enrolled_at",
     }}},
 }
@@ -115,8 +116,7 @@ func GetStudentByUserID(ctx context.Context, userID primitive.ObjectID) (*models
 }
 func (s *CourseService) GetAllCourses(ctx context.Context) ([]domain.CourseItem, error) {
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
+
 
 	cursor, err := s.Collection.Find(ctx, bson.M{})
 	if err != nil {
