@@ -19,7 +19,7 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
-
+	
 	// Connect to MongoDB
 	config.ConnectDB()
 
@@ -46,6 +46,7 @@ func main() {
 	// protected.HandleFunc("/student/me/profile", handlers.GetMyStudentProfile).Methods("GET")
 	protected.HandleFunc("/student/me/courses", courseHandler.GetUserCourses).Methods("GET")
 	protected.HandleFunc("/student/me/semester", handlers.GetSemesterIDByYearAndTerm).Methods("GET")
+	protected.HandleFunc("/student/me/signature",handlers.GenerateSignatureHandler).Methods("POST")
 	
 	log.Printf("Server starting on port %s", port)
 	if err := http.ListenAndServe(":"+port, router); err != nil {
