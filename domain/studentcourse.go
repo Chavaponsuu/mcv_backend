@@ -19,8 +19,10 @@ type StudentCourseItem struct {
     EnrolledAt   time.Time               `bson:"enrolled_at"  json:"enrolled_at"`
 }
 type CourseItem struct {
-	ID         string `json:"id"`
-	CourseCode string `json:"course_code"`
-	Title      string `json:"title"`
-	Credits    int    `json:"credits"`
+	ID          string `json:"id"`
+	CourseCode  string `json:"course_code"`
+	Title       string `json:"title"`
+	Credits     int    `json:"credits"`
+	Description string `json:"description,omitempty"`
+	ImageUrl    string `json:"image_url,omitempty"`
 }

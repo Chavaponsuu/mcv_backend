@@ -93,6 +93,33 @@ func (h *CourseHandler) GetAllCourses(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// GetCourseByID handles GET /api/courses/:course_id
+// Fetches a specific course by its ID
+func (h *CourseHandler) GetCourseByID(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	// Extract course ID from URL path
+	courseID := r.PathValue("course_id")
+	if courseID == "" {
+		respondWithError(w, http.StatusBadRequest, "Course ID is required")
+		return
+	}
+
+	// Fetch course by ID from service
+	course, err := h.Service.GetCourseByID(ctx, courseID)
+	if err != nil {
+		if err.Error() == "course not found" {
+			respondWithError(w, http.StatusNotFound, "Course not found")
+		} else {
+			respondWithError(w, http.StatusInternalServerError, "Failed to fetch course: "+err.Error())
+		}
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, course)
+}
+
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	response, _ := json.Marshal(payload)
 	w.Header().Set("Content-Type", "application/json")

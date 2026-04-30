@@ -135,12 +135,42 @@ func (s *CourseService) GetAllCourses(ctx context.Context) ([]domain.CourseItem,
 
 	for _, c := range courses {
 		items = append(items, domain.CourseItem{
-			ID:         c.ID.Hex(),
-			CourseCode: c.CourseCode,
-			Title:      c.Title,
-			Credits:    c.Credits,
+			ID:          c.ID.Hex(),
+			CourseCode:  c.CourseCode,
+			Title:       c.Title,
+			Credits:     c.Credits,
+			Description: c.Description,
+			ImageUrl:    c.ImageUrl,
 		})
 	}
 
 	return items, nil
+}
+
+// GetCourseByID fetches a course by its ID
+func (s *CourseService) GetCourseByID(ctx context.Context, courseID string) (*domain.CourseItem, error) {
+	objID, err := primitive.ObjectIDFromHex(courseID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid course ID: %w", err)
+	}
+
+	var course models.Course
+	err = s.Collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&course)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("course not found")
+		}
+		return nil, fmt.Errorf("failed to fetch course: %w", err)
+	}
+
+	item := &domain.CourseItem{
+		ID:         course.ID.Hex(),
+		CourseCode: course.CourseCode,
+		Title:      course.Title,
+		Credits:    course.Credits,
+		Description: course.Description,
+		ImageUrl:   course.ImageUrl,
+	}
+
+	return item, nil
 }
